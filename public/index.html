@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PDF Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 50px;
+      color: black;
+      background-color: white;
+    }
+
+    h2 {
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 250px;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+
+    button {
+      width: 270px;
+      padding: 10px;
+      background-color: blue;
+      color: white;
+      font-weight: bold;
+      border: none;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    textarea {
+      height: 100px;
+      resize: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Login</h2>
+  <input id="user" placeholder="Username"><br>
+  <input id="pass" type="password" placeholder="Password"><br>
+  <button onclick="login()">Login</button>
+
+  <h2>Generate PDF</h2>
+  <textarea id="content" placeholder="Enter content here..."></textarea><br>
+  <button onclick="generatePDF()">Download PDF</button>
+
+  <script>
+    let token = '';
+
+    async function login() {
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('user').value,
+          password: document.getElementById('pass').value
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.token) {
+        token = data.token || '';
+        console.log('JWT Token:', token);
+        alert('Login successful!');
+      } else {
+        alert(data.message || 'Login failed');
+      }
+    }
+
+    async function generatePDF() {
+      if (!token) {
+        alert("No token found. Please login first.");
+        return;
+      }
+
+      const content = document.getElementById('content').value;
+
+      const res = await fetch('/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ content })
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'output.pdf';
+        link.click();
+      } else {
+        alert('Access denied. Login first.');
+        console.error(await res.text());
+      }
+    }
+  </script>
+</body>
+</html>
